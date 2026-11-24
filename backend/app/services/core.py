@@ -54,6 +54,12 @@ def overview(conn) -> dict:
         "SELECT COALESCE(SUM(amount),0) AS a FROM sessions WHERE business_day=? AND status='已关账'",
         (today(),),
     ).fetchone()["a"]
+    # 臂B：超时附加账独立成桶，绝不计入在充电量（原会话已超时不再增电量）
+    append = conn.execute(
+        """SELECT COUNT(*) AS n, COALESCE(SUM(delta_kwh),0) AS k, COALESCE(SUM(amount),0) AS a
+           FROM timeout_append_ledger WHERE replayed=0"""
+    ).fetchone()
+    timeout_sessions = sess_map.get("已超时", 0)
     return {
         "桩位空闲": pile_map.get("空闲", 0),
         "桩位占用": pile_map.get("占用", 0),
@@ -62,10 +68,15 @@ def overview(conn) -> dict:
         "充电中": sess_map.get("充电中", 0),
         "结算中": sess_map.get("结算中", 0),
         "已关账": sess_map.get("已关账", 0),
-        "已超时": sess_map.get("已超时", 0),
+        "已超时": timeout_sessions,
         "已中断": sess_map.get("已中断", 0),
         "在充电量": round(float(open_kwh), 3),
         "本日关账金额": round(float(today_amount), 2),
+        # 超时桶：会话数与附加账承接结果必须与超时页/会话册同口径
+        "超时桶会话数": timeout_sessions,
+        "超时附加账笔数": append["n"],
+        "超时附加电量": round(float(append["k"]), 3),
+        "超时附加金额": round(float(append["a"]), 2),
         "营业日": today(),
         "充日已封印": is_day_sealed(conn),
     }
@@ -159,7 +170,43 @@ def session_detail(conn, session_id: int):
             "SELECT * FROM session_events WHERE session_id=? ORDER BY id", (session_id,)
         ).fetchall()
     )
+    # 臂B：附加账与脉冲审计随会话详情同刷，关联链可对照
+    appends = rows(
+        conn.execute(
+            "SELECT * FROM timeout_append_ledger WHERE session_id=? ORDER BY id", (session_id,)
+        ).fetchall()
+    )
+    audits = rows(
+        conn.execute(
+            "SELECT * FROM pulse_audit WHERE session_id=? ORDER BY id", (session_id,)
+        ).fetchall()
+    )
     d = row_dict(se)
     d["脉冲"] = pulses
     d["事件"] = events
+    d["超时附加账"] = appends
+    d["脉冲审计"] = audits
     return d
+
+
+def list_append_ledger(conn, session_id: int | None = None):
+    if session_id:
+        rs = conn.execute(
+            "SELECT * FROM timeout_append_ledger WHERE session_id=? ORDER BY id DESC",
+            (session_id,),
+        ).fetchall()
+    else:
+        rs = conn.execute(
+            "SELECT * FROM timeout_append_ledger ORDER BY id DESC LIMIT 200"
+        ).fetchall()
+    return rows(rs)
+
+
+def list_pulse_audit(conn, session_id: int | None = None):
+    if session_id:
+        rs = conn.execute(
+            "SELECT * FROM pulse_audit WHERE session_id=? ORDER BY id DESC", (session_id,)
+        ).fetchall()
+    else:
+        rs = conn.execute("SELECT * FROM pulse_audit ORDER BY id DESC LIMIT 200").fetchall()
+    return rows(rs)

@@ -26,6 +26,12 @@ export default function Home() {
     ['在充电量', o.在充电量],
     ['本日关账金额', o.本日关账金额],
   ]
+  const timeoutItems = [
+    ['超时桶会话数', o.超时桶会话数],
+    ['超时附加账笔数', o.超时附加账笔数],
+    ['超时附加电量', o.超时附加电量],
+    ['超时附加金额', o.超时附加金额],
+  ]
   return (
     <div className="page">
       <h2>总览</h2>
@@ -34,6 +40,15 @@ export default function Home() {
       </p>
       <div className="grid">
         {items.map(([k, v]) => (
+          <div className="stat" key={k}>
+            <div className="k">{k}</div>
+            <div className="v">{v}</div>
+          </div>
+        ))}
+      </div>
+      <h3 style={{ marginTop: 24 }}>超时附加账桶（超时后脉冲承接，不计入在充电量）</h3>
+      <div className="grid">
+        {timeoutItems.map(([k, v]) => (
           <div className="stat" key={k}>
             <div className="k">{k}</div>
             <div className="v">{v}</div>

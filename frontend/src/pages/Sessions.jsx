@@ -55,7 +55,7 @@ export default function Sessions() {
           <p>
             锁定电价 {detail.price_locked} · 电量 {detail.kwh} · 金额 {detail.amount}
           </p>
-          <h3>脉冲</h3>
+          <h3>脉冲（仅在充期并入原会话）</h3>
           <table>
             <thead>
               <tr>
@@ -70,6 +70,59 @@ export default function Sessions() {
                   <td>{p.created_at}</td>
                   <td>{p.delta_kwh}</td>
                   <td>{p.power_kw}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <h3>超时附加账（超时后脉冲承接，不增原会话电量）</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>附加账号</th>
+                <th>电量</th>
+                <th>金额</th>
+                <th>审计关联</th>
+                <th>重放</th>
+                <th>时间</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(detail.超时附加账 || []).map((x) => (
+                <tr key={x.id}>
+                  <td>{x.ledger_no}</td>
+                  <td>{x.delta_kwh}</td>
+                  <td>{x.amount}</td>
+                  <td>{x.pulse_audit_id ? `审计#${x.pulse_audit_id}` : '缺失'}</td>
+                  <td>{x.replayed ? `已重放 ${x.replayed_at || ''}` : '待承接'}</td>
+                  <td>{x.created_at}</td>
+                </tr>
+              ))}
+              {!(detail.超时附加账 || []).length && (
+                <tr><td colSpan={6} className="msg">无附加账</td></tr>
+              )}
+            </tbody>
+          </table>
+          <h3>脉冲审计（每个脉冲写口一笔，命运可重放）</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>命运</th>
+                <th>电量</th>
+                <th>附加账关联</th>
+                <th>重放自</th>
+                <th>备注</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(detail.脉冲审计 || []).map((a) => (
+                <tr key={a.id}>
+                  <td>{a.created_at}</td>
+                  <td><span className={`tag ${a.disposition}`}>{a.disposition}</span></td>
+                  <td>{a.delta_kwh}</td>
+                  <td>{a.ledger_id ? `附加账#${a.ledger_id}` : '—'}</td>
+                  <td>{a.replayed_of ? `审计#${a.replayed_of}` : '—'}</td>
+                  <td>{a.note}</td>
                 </tr>
               ))}
             </tbody>

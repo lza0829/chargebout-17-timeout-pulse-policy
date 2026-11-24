@@ -141,9 +141,9 @@ th { color: var(--muted); font-weight: 600; font-size: 0.85rem; }
   font-size: 0.8rem;
 }
 .tag.充电中, .tag.占用 { border-color: var(--lime-dim); color: var(--lime); }
-.tag.已关账, .tag.空闲, .tag.可用 { color: #b7d7a8; }
-.tag.已超时, .tag.维护 { color: var(--warn); }
-.tag.已中断, .tag.故障 { color: var(--danger); }
+.tag.已关账, .tag.空闲, .tag.可用, .tag.并入原会话 { color: #b7d7a8; }
+.tag.已超时, .tag.维护, .tag.附加账承接, .tag.重放承接 { color: var(--warn); }
+.tag.已中断, .tag.故障, .tag.拒收 { color: var(--danger); }
 
 @media (max-width: 720px) {
   .brand { font-size: 1.7rem; }
